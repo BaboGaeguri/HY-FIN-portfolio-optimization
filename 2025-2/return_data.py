@@ -1,11 +1,15 @@
+import os
 import requests
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def data():
     url = 'https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo'
 
     params_base = {
-        'serviceKey': 'yLTnNiCtiAKjrQ/q5g88bmjI60eII3JyvQdvSDbr7UqW/8LAmvPXxVWexltSH2oBU0vMjV64vJQ+9VRMi05EVg==',
+        'serviceKey': os.environ['DATA_SERVICE_KEY'],
         'numOfRows': '10000',
         'resultType': 'json',
         'beginBasDt': '20190101',
