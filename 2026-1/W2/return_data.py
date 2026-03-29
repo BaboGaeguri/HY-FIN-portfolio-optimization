@@ -5,14 +5,14 @@ import pandas as pd
 from dotenv import load_dotenv
 
 # 스크립트 위치 기준으로 .env 로드 (실행 위치와 무관하게 동작)
-load_dotenv(dotenv_path=Path(__file__).parent / '.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
 BASE_URL = 'https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo'
 
-STOCKS = ['대한항공', '호텔신라', '강원랜드', 'CJ CGV', '롯데쇼핑']
+STOCKS = ['삼성전자', 'SK하이닉스']
 
-BEGIN_DATE = '20230101'
-END_DATE   = '20261231'
+BEGIN_DATE = '20240101'
+END_DATE   = '20251231'
 
 
 def fetch_stock(stock: str, service_key: str) -> list[dict]:
@@ -67,17 +67,17 @@ def data() -> pd.DataFrame:
 
     df = pd.DataFrame(all_items)
 
-    df = df[['basDt', 'itmsNm', 'clpr']].copy()
     df['basDt'] = pd.to_datetime(df['basDt'], format='%Y%m%d')
-    df['clpr'] = (
-        df['clpr']
-        .astype(str)
-        .str.replace(',', '', regex=False)
-        .astype(float)
-    )
 
-    df = df.sort_values(by=['itmsNm', 'basDt']).reset_index(drop=True)
-    df['return'] = df.groupby('itmsNm')['clpr'].pct_change()
+    numeric_cols = ['clpr', 'vs', 'fltRt', 'mkp', 'hipr', 'lopr', 'trqu', 'trPrc', 'lstgStCnt', 'mrktTotAmt']
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '', regex=False), errors='coerce')
+
+    col_order = ['basDt', 'itmsNm', 'srtnCd', 'isinCd', 'mrktCtg',
+                 'clpr', 'vs', 'fltRt', 'mkp', 'hipr', 'lopr',
+                 'trqu', 'trPrc', 'lstgStCnt', 'mrktTotAmt']
+    df = df[[c for c in col_order if c in df.columns]]
 
     return df
 
@@ -86,3 +86,7 @@ if __name__ == '__main__':
     df = data()
     print(df.head(20))
     print(f"\n총 {len(df)}행, 종목: {df['itmsNm'].unique().tolist()}")
+
+    output_path = Path(__file__).parent / 'stock_data.csv'
+    df.to_csv(output_path, index=False, encoding='utf-8-sig')
+    print(f"\n저장 완료: {output_path}")
